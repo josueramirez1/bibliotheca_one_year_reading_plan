@@ -1,102 +1,124 @@
-const generatePlan = () => {
-  const totalDays = 358;
+// --- CONFIGURATION & CONSTANTS ---
+const TOTAL_DAYS = 358;
 
-  // 1. Build the master list using Volumes I, II, III, and V (Volume IV removed)
-  const rawVolumes = [
-    { name: "Volume I", start: 15, end: 751 },
-    { name: "Volume II", start: 15, end: 559 },
-    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 },
-    { name: "Volume V", start: 15, end: 566 },
-  ];
+// Canonical volumes (Volume IV Apocrypha excluded) with built-in Psalms skipped on main track
+const RAW_VOLUMES = [
+  { name: "Volume I", start: 15, end: 751 },
+  { name: "Volume II", start: 15, end: 559 },
+  { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 },
+  { name: "Volume V", start: 15, end: 566 },
+];
 
-  let masterPages = [];
-  rawVolumes.forEach((v) => {
+// Psalm 119 Stanza Breakdown mapped to Volume III pages
+const PSALM_119_PARTS = [
+  "Psalm 119:1–32 (p. 159–160)",
+  "Psalm 119:33–64 (p. 161–162)",
+  "Psalm 119:65–96 (p. 163–164)",
+  "Psalm 119:97–128 (p. 165–166)",
+  "Psalm 119:129–152 (p. 167)",
+  "Psalm 119:153–176 (p. 168)"
+];
+
+// Final stretch psalm sequence for Days 311–358 ending on Psalm 48[cite: 1]
+const FINAL_PASS_PSALMS = [
+  "Psalm 1", "Psalm 2", "Psalm 3", "Psalm 4", "Psalm 5", "Psalm 6", "Psalm 7",
+  "Psalm 8", "Psalm 9", "Psalm 10", "Psalm 11", "Psalm 12", "Psalm 13", "Psalm 14",
+  "Psalm 15", "Psalm 16", "Psalm 17", "Psalm 18", "Psalm 19", "Psalm 20", "Psalm 21",
+  "Psalm 22", "Psalm 23", "Psalm 24", "Psalm 25", "Psalm 26", "Psalm 27", "Psalm 28",
+  "Psalm 29", "Psalm 30", "Psalm 31", "Psalm 32", "Psalm 33", "Psalm 34", "Psalm 35",
+  "Psalm 36", "Psalm 37", "Psalm 38", "Psalm 39", "Psalm 40", "Psalm 41", "Psalm 42",
+  "Psalm 43", "Psalm 44", "Psalm 45", "Psalm 46", "Psalm 47", "Psalm 48"[cite: 1]
+];
+
+
+// --- HELPER FUNCTIONS ---
+
+// Builds the flat array of all canonical pages to read across the year
+const buildMasterPages = (volumes) => {
+  let pages = [];
+  volumes.forEach((v) => {
     for (let p = v.start; p <= v.end; p++) {
       if (v.skipStart && p >= v.skipStart && p <= v.skipEnd) continue;
-      masterPages.push({ volume: v.name, page: p });
+      pages.push({ volume: v.name, page: p });
+    }
+  });
+  return pages;
+};
+
+// Maps any given day (1 to 358) to its exact BibleProject Psalm assignment
+const getPsalmForDay = (day) => {
+  if (day === 175) return "Psalm 1–2"; //[cite: 1]
+
+  // Pass 1: Days 1 to 155
+  if (day >= 1 && day <= 155) {
+    if (day >= 119 && day <= 124) return PSALM_119_PARTS[day - 119];
+    let baseNum = day < 119 ? day : day - 5;
+    return `Psalm ${baseNum}`;
+  } 
+  
+  // Pass 2: Days 156 to 310 (Resets at Psalm 1 on Day 156)[cite: 1]
+  if (day >= 156 && day <= 310) {
+    const adjustedDay = day < 175 ? day - 155 : day - 156;
+    if (adjustedDay >= 119 && adjustedDay <= 124) return PSALM_119_PARTS[adjustedDay - 119];
+    let baseNum = adjustedDay < 119 ? adjustedDay : adjustedDay - 5;
+    return `Psalm ${Math.min(baseNum, 150)}`;
+  } 
+  
+  // Pass 3 / Final Stretch: Days 311 to 358
+  const index = day - 311;
+  return FINAL_PASS_PSALMS[Math.min(index, FINAL_PASS_PSALMS.length - 1)];
+};
+
+// Groups sequential pages into clean volume display strings
+const formatPageDisplay = (dayPages) => {
+  const groups = [];
+  dayPages.forEach((item) => {
+    let last = groups[groups.length - 1];
+    if (last && last.volume === item.volume) {
+      last.endPage = item.page;
+    } else {
+      groups.push({ volume: item.volume, startPage: item.page, endPage: item.page });
     }
   });
 
-  // 2. Distribute pages across the 358 active days
+  const isTransition = groups.length > 1;
+  if (!isTransition) {
+    return {
+      volDisplay: groups[0].volume,
+      pageDisplay: groups[0].startPage === groups[0].endPage 
+        ? `${groups[0].startPage}` 
+        : `${groups[0].startPage}–${groups[0].endPage}`,
+      isTransition: false
+    };
+  } else {
+    return {
+      volDisplay: groups.map(g => g.volume).join(" & "),
+      pageDisplay: groups.map(g => `${g.volume}: ${g.startPage === g.endPage ? g.startPage : g.startPage + '–' + g.endPage}`).join("; "),
+      isTransition: true
+    };
+  }
+};
+
+
+// --- MAIN GENERATOR FUNCTION ---
+
+const generatePlan = () => {
+  const masterPages = buildMasterPages(RAW_VOLUMES);
   const totalPages = masterPages.length;
-  const basePPD = Math.floor(totalPages / totalDays);
-  let extraPages = totalPages % totalDays;
+  
+  const basePPD = Math.floor(totalPages / TOTAL_DAYS);
+  const extraPages = totalPages % TOTAL_DAYS;
 
   let planHTML = "";
   let pageIndex = 0;
-  
-  // Track sequential Psalm progression
-  let psalmStep = 0; 
-  const totalPsalmSlots = 300;
 
-  // Pre-generate a flattened array of all 300 daily Psalm assignments (expanding Psalm 119 into 6 parts each time it appears)
-  let psalmSequence = [];
-  
-  for (let i = 0; i < totalPsalmSlots; i++) {
-    const baseIndex = i % 150;
-    const basePsalmNum = baseIndex + 1;
-
-    if (basePsalmNum !== 119) {
-      psalmSequence.push(`Psalm ${basePsalmNum}`);
-    } else {
-      // Expand Psalm 119 into its 6 exact page and stanza sections
-      psalmSequence.push("Psalm 119 (p. 159–160: Aleph – Daleth)");
-      psalmSequence.push("Psalm 119 (p. 161–162: He – Heth)");
-      psalmSequence.push("Psalm 119 (p. 163–164: Teth – Lamedh)");
-      psalmSequence.push("Psalm 119 (p. 165–166: Mem – Ayin)");
-      psalmSequence.push("Psalm 119 (p. 167: Pe – Qoph)");
-      psalmSequence.push("Psalm 119 (p. 168: Resh – Taw)");
-      // Note: Because expanding 119 adds 5 extra slots per occurrence, 
-      // we advance our loop index `i` past the extra iterations so we don't duplicate them
-      i += 5; 
-    }
-  }
-
-  // 3. Generate rows for each day
-  for (let day = 1; day <= totalDays; day++) {
+  for (let day = 1; day <= TOTAL_DAYS; day++) {
     const ppd = basePPD + (day <= extraPages ? 1 : 0);
     const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
     pageIndex += ppd;
 
-    const groups = [];
-    dayPages.forEach((item) => {
-      let lastGroup = groups[groups.length - 1];
-      if (lastGroup && lastGroup.volume === item.volume) {
-        lastGroup.endPage = item.page;
-      } else {
-        groups.push({
-          volume: item.volume,
-          startPage: item.page,
-          endPage: item.page,
-        });
-      }
-    });
-
-    const isTransition = groups.length > 1;
-    let volDisplay, pageDisplay;
-
-    if (!isTransition) {
-      volDisplay = groups[0].volume;
-      pageDisplay =
-        groups[0].startPage === groups[0].endPage
-          ? `${groups[0].startPage}`
-          : `${groups[0].startPage}–${groups[0].endPage}`;
-    } else {
-      volDisplay = groups.map((g) => g.volume).join(" & ");
-      pageDisplay = groups
-        .map(
-          (g) =>
-            `${g.volume}: ${
-              g.startPage === g.endPage
-                ? g.startPage
-                : g.startPage + "–" + g.endPage
-            }`
-        )
-        .join("; ");
-    }
-
-    // Pull from our pre-built sequence, looping if we ever reach the end
-    let psalmDisplay = psalmSequence[(day - 1) % psalmSequence.length];
+    const { volDisplay, pageDisplay, isTransition } = formatPageDisplay(dayPages);
+    const psalmDisplay = getPsalmForDay(day);
 
     planHTML += `
       <div class="row ${isTransition ? "is-transition" : ""}">
