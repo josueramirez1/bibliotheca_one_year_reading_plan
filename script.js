@@ -36,7 +36,6 @@ const buildMasterPages = (volumes) => {
   return pages;
 };
 
-// Psalm track flows independently based on the active day count
 const getPsalmForDay = (day) => {
   if (day >= 1 && day <= 155) {
     if (day >= 119 && day <= 124) return PSALM_119_PARTS[day - 119];
@@ -55,44 +54,54 @@ const getPsalmForDay = (day) => {
 
 const generatePlan = () => {
   const masterPages = buildMasterPages(RAW_VOLUMES);
+  
+  // 357 narrative days + 1 dedicated transition wedge day = 358 total days
+  const activeNarrativeDays = TOTAL_DAYS - 1; 
   const totalPages = masterPages.length;
   
-  // We have 358 total days. Let's find the specific transition day 
-  // right where Volume II finishes and Volume III begins.
-  // (We can target the exact day index where the volume shift happens, e.g., around day 174-175).
-  
-  const basePPD = Math.floor(totalPages / TOTAL_DAYS);
-  const extraPages = totalPages % TOTAL_DAYS;
+  const basePPD = Math.floor(totalPages / activeNarrativeDays);
+  const extraPages = totalPages % activeNarrativeDays;
 
-  let planHTML = "";
+  // Step 1: Pre-calculate page slices for all 357 narrative days to find the exact Volume II -> III boundary
+  let narrativeSlices = [];
   let pageIndex = 0;
+  for (let d = 1; d <= activeNarrativeDays; d++) {
+    const ppd = basePPD + (d <= extraPages ? 1 : 0);
+    const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
+    pageIndex += ppd;
+    narrativeSlices.push(dayPages);
+  }
 
-  // Let's dynamically locate the day index where Volume II transitions into Volume III
-  // so we can insert our custom wedge day right there.
-  
+  // Find which day index transitions from Volume II to Volume III
+  let wedgeInsertIndex = narrativeSlices.findIndex((slice, index) => {
+    if (index === 0) return false;
+    const prevVol = narrativeSlices[index - 1][narrativeSlices[index - 1].length - 1].volume;
+    const currVol = slice[0].volume;
+    return prevVol === "Volume II" && currVol === "Volume III";
+  });
+
+  // Fallback if index isn't found automatically
+  if (wedgeInsertIndex === -1) wedgeInsertIndex = Math.floor(activeNarrativeDays / 2);
+
+  // Step 2: Build the final 358-day schedule, injecting the wedge and absorbing an extra page right before it
+  let planHTML = "";
+  let narrativeSlicePtr = 0;
+
   for (let day = 1; day <= TOTAL_DAYS; day++) {
     let volDisplay = "";
     let pageDisplay = "";
     let isTransition = false;
 
-    // Detect the boundary day between Volume II and Volume III to insert our transition wedge
-    // (You can fine-tune this day number depending on exactly where Volume II ends in your total span)
-    const isWedgeDay = (day === 175); // Adjust this day number if your Volume II boundary shifts slightly
-
-    if (isWedgeDay) {
+    // The wedge day sits right at the Volume II / III transition point
+    if (day === wedgeInsertIndex + 1) {
       volDisplay = "Writings";
       pageDisplay = "Psalms 1–2";
     } else {
-      // If it's the day right before our wedge, we add an extra page to smooth out the pacing
-      let ppd = basePPD + (day <= extraPages ? 1 : 0);
-      if (day === 174) ppd += 1; 
-      if (day === 175) {
-        // Skip page consumption for the wedge day since it's a dedicated reading break
-        ppd = 0; 
+      // If this is the day immediately before the wedge, absorb an extra page from the next slice to smooth pacing
+      let dayPages = narrativeSlices[narrativeSlicePtr++];
+      if (day === wedgeInsertIndex && narrativeSlicePtr < narrativeSlices.length) {
+        dayPages = dayPages.concat(narrativeSlices[narrativeSlicePtr++];
       }
-
-      const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
-      pageIndex += ppd;
 
       const groups = [];
       dayPages.forEach((item) => {
