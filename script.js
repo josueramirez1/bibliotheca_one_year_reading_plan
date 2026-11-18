@@ -1,5 +1,6 @@
 const generatePlan = () => {
   const totalDays = 365;
+
   // 1. Build the master list of main-track pages, excluding Volume III Psalms (15-194)
   const rawVolumes = [
     { name: "Volume I", start: 15, end: 751 },
@@ -10,7 +11,7 @@ const generatePlan = () => {
   ];
 
   let masterPages = [];
-  rawVolumes.forEach(v => {
+  rawVolumes.forEach((v) => {
     for (let p = v.start; p <= v.end; p++) {
       if (v.skipStart && p >= v.skipStart && p <= v.skipEnd) continue;
       masterPages.push({ volume: v.name, page: p });
@@ -24,30 +25,25 @@ const generatePlan = () => {
 
   let planHTML = "";
   let pageIndex = 0;
+  let psalmCounter = 0; // Tracks sequential Psalm readings
 
-  // 3. Helper for the dual-cycle Psalms track (Psalms 1–150 read twice across 365 days)
-  const getPsalmNumber = (dayNum) => {
-    const totalPsalms = 150;
-    const cycleLength = totalDays / 2; // 182.5 days per cycle
-    const adjustedDay = (dayNum - 1) % cycleLength;
-    const psalmOffset = Math.floor((adjustedDay * totalPsalms) / cycleLength);
-    return psalmOffset + 1; // Psalms 1 to 150
-  };
-
-  // 4. Generate rows for each day
+  // 3. Generate rows for each day
   for (let day = 1; day <= totalDays; day++) {
     const ppd = basePPD + (day <= extraPages ? 1 : 0);
     const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
     pageIndex += ppd;
 
-    // Group assigned pages by volume for clean display
     const groups = [];
-    dayPages.forEach(item => {
+    dayPages.forEach((item) => {
       let lastGroup = groups[groups.length - 1];
       if (lastGroup && lastGroup.volume === item.volume) {
         lastGroup.endPage = item.page;
       } else {
-        groups.push({ volume: item.volume, startPage: item.page, endPage: item.page });
+        groups.push({
+          volume: item.volume,
+          startPage: item.page,
+          endPage: item.page,
+        });
       }
     });
 
@@ -56,22 +52,42 @@ const generatePlan = () => {
 
     if (!isTransition) {
       volDisplay = groups[0].volume;
-      pageDisplay = groups[0].startPage === groups[0].endPage 
-        ? `${groups[0].startPage}` 
-        : `${groups[0].startPage}–${groups[0].endPage}`;
+      pageDisplay =
+        groups[0].startPage === groups[0].endPage
+          ? `${groups[0].startPage}`
+          : `${groups[0].startPage}–${groups[0].endPage}`;
     } else {
-      volDisplay = groups.map(g => g.volume).join(" & ");
-      pageDisplay = groups.map(g => `${g.volume}: ${g.startPage === g.endPage ? g.startPage : g.startPage + '–' + g.endPage}`).join("; ");
+      volDisplay = groups.map((g) => g.volume).join(" & ");
+      pageDisplay = groups
+        .map(
+          (g) =>
+            `${g.volume}: ${
+              g.startPage === g.endPage
+                ? g.startPage
+                : g.startPage + "–" + g.endPage
+            }`
+        )
+        .join("; ");
     }
 
-    const psalmNum = getPsalmNumber(day);
+    // 4. 5 days on, 2 days off pattern (e.g., skipping every 6th and 7th day of the week, 
+    // or weekends), mapping out 300 total Psalm readings smoothly.
+    let psalmDisplay = "—";
+    const dayOfWeek = day % 7;
+    // If dayOfWeek is 0 (Saturday) or 6 (Friday/Weekend), leave blank as a rest day. 
+    // Otherwise, assign the next sequential Psalm up to the 300 cap.
+    if (dayOfWeek !== 0 && dayOfWeek !== 6 && psalmCounter < 300) {
+      const psalmNum = (psalmCounter % 150) + 1;
+      psalmDisplay = `Psalm ${psalmNum}`;
+      psalmCounter++;
+    }
 
     planHTML += `
       <div class="row ${isTransition ? "is-transition" : ""}">
           <div class="cell day-cell">Day ${day}</div>
           <div class="cell vol-cell">${volDisplay}</div>
           <div class="cell page-cell">${pageDisplay}</div>
-          <div class="cell psalm-cell">Psalm ${psalmNum}</div>
+          <div class="cell psalm-cell">${psalmDisplay}</div>
       </div>
     `;
   }
