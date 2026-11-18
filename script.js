@@ -1,10 +1,11 @@
 const generatePlan = () => {
   const totalDays = 365;
 
+  // 1. Build the master list of main-track pages, excluding Volume III Psalms (15-194)
   const rawVolumes = [
     { name: "Volume I", start: 15, end: 751 },
     { name: "Volume II", start: 15, end: 559 },
-    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 }, // Psalms skipped on main track
+    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 },
     { name: "Volume IV", start: 15, end: 552 },
     { name: "Volume V", start: 15, end: 566 },
   ];
@@ -73,7 +74,7 @@ const generatePlan = () => {
           <div class="cell day-cell">Day ${day}</div>
           <div class="cell vol-cell">${volDisplay}</div>
           <div class="cell page-cell">${pageDisplay}</div>
-          <div class="cell psalm-cell">Vol. III Psalms: p. ${psalmPage}</div>
+          <div class="cell psalm-cell">Psalms: p. ${psalmPage}</div>
       </div>
     `;
   }
