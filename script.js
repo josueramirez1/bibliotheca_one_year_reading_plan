@@ -36,47 +36,21 @@ const buildMasterPages = (volumes) => {
   return pages;
 };
 
+// Psalm track flows normally without interruption
 const getPsalmForDay = (day) => {
-  if (day === 175) return "Psalm 1–2";
   if (day >= 1 && day <= 155) {
     if (day >= 119 && day <= 124) return PSALM_119_PARTS[day - 119];
     let baseNum = day < 119 ? day : day - 5;
     return "Psalm " + baseNum;
   } 
   if (day >= 156 && day <= 310) {
-    const adjustedDay = day < 175 ? day - 155 : day - 156;
+    const adjustedDay = day - 155;
     if (adjustedDay >= 119 && adjustedDay <= 124) return PSALM_119_PARTS[adjustedDay - 119];
     let baseNum = adjustedDay < 119 ? adjustedDay : adjustedDay - 5;
     return "Psalm " + Math.min(baseNum, 150);
   } 
   const index = day - 311;
   return FINAL_PASS_PSALMS[Math.min(index, FINAL_PASS_PSALMS.length - 1)];
-};
-
-const formatPageDisplay = (dayPages) => {
-  const groups = [];
-  dayPages.forEach((item) => {
-    let last = groups[groups.length - 1];
-    if (last && last.volume === item.volume) {
-      last.endPage = item.page;
-    } else {
-      groups.push({ volume: item.volume, startPage: item.page, endPage: item.page });
-    }
-  });
-
-  if (groups.length === 1) {
-    return {
-      volDisplay: groups[0].volume,
-      pageDisplay: groups[0].startPage === groups[0].endPage ? "" + groups[0].startPage : groups[0].startPage + "–" + groups[0].endPage,
-      isTransition: false
-    };
-  } else {
-    return {
-      volDisplay: groups.map(g => g.volume).join(" & "),
-      pageDisplay: groups.map(g => g.volume + ": " + (g.startPage === g.endPage ? g.startPage : g.startPage + "–" + g.endPage)).join("; "),
-      isTransition: true
-    };
-  }
 };
 
 const generatePlan = () => {
@@ -89,17 +63,45 @@ const generatePlan = () => {
   let pageIndex = 0;
 
   for (let day = 1; day <= TOTAL_DAYS; day++) {
-    const ppd = basePPD + (day <= extraPages ? 1 : 0);
-    const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
-    pageIndex += ppd;
+    let volDisplay = "";
+    let pageDisplay = "";
+    let isTransition = false;
 
-    const res = formatPageDisplay(dayPages);
+    // Special override for Day 175: narrative track pauses for Psalms 1–2
+    if (day === 175) {
+      volDisplay = "Writings";
+      pageDisplay = "Psalms 1–2";
+    } else {
+      const ppd = basePPD + (day <= extraPages ? 1 : 0);
+      const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
+      pageIndex += ppd;
+
+      const groups = [];
+      dayPages.forEach((item) => {
+        let last = groups[groups.length - 1];
+        if (last && last.volume === item.volume) {
+          last.endPage = item.page;
+        } else {
+          groups.push({ volume: item.volume, startPage: item.page, endPage: item.page });
+        }
+      });
+
+      isTransition = groups.length > 1;
+      if (!isTransition) {
+        volDisplay = groups[0].volume;
+        pageDisplay = groups[0].startPage === groups[0].endPage ? "" + groups[0].startPage : groups[0].startPage + "–" + groups[0].endPage;
+      } else {
+        volDisplay = groups.map(g => g.volume).join(" & ");
+        pageDisplay = groups.map(g => g.volume + ": " + (g.startPage === g.endPage ? g.startPage : g.startPage + "–" + g.endPage)).join("; ");
+      }
+    }
+
     const psalmDisplay = getPsalmForDay(day);
 
-    planHTML += '<div class="row ' + (res.isTransition ? 'is-transition' : '') + '">' +
+    planHTML += '<div class="row ' + (isTransition ? 'is-transition' : '') + '">' +
                   '<div class="cell day-cell">Day ' + day + '</div>' +
-                  '<div class="cell vol-cell">' + res.volDisplay + '</div>' +
-                  '<div class="cell page-cell">' + res.pageDisplay + '</div>' +
+                  '<div class="cell vol-cell">' + volDisplay + '</div>' +
+                  '<div class="cell page-cell">' + pageDisplay + '</div>' +
                   '<div class="cell psalm-cell">' + psalmDisplay + '</div>' +
                 '</div>';
   }
