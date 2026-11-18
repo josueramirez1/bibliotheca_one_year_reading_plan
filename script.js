@@ -1,11 +1,11 @@
 const generatePlan = () => {
   const totalDays = 358;
 
-  // 1. Build the master list using ONLY Volumes I, II, III, and V (Volume IV is completely removed)
+  // 1. Build the master list using Volumes I, II, III, and V (Volume IV removed)
   const rawVolumes = [
     { name: "Volume I", start: 15, end: 751 },
     { name: "Volume II", start: 15, end: 559 },
-    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 }, // Skips built-in Psalms
+    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 },
     { name: "Volume V", start: 15, end: 566 },
   ];
 
@@ -25,10 +25,32 @@ const generatePlan = () => {
   let planHTML = "";
   let pageIndex = 0;
   
-  // Track sequential Psalm progression (300 total slots for 2 full cycles)
+  // Track sequential Psalm progression
   let psalmStep = 0; 
   const totalPsalmSlots = 300;
-  let psalm119Day = 0;
+
+  // Pre-generate a flattened array of all 300 daily Psalm assignments (expanding Psalm 119 into 6 parts each time it appears)
+  let psalmSequence = [];
+  
+  for (let i = 0; i < totalPsalmSlots; i++) {
+    const baseIndex = i % 150;
+    const basePsalmNum = baseIndex + 1;
+
+    if (basePsalmNum !== 119) {
+      psalmSequence.push(`Psalm ${basePsalmNum}`);
+    } else {
+      // Expand Psalm 119 into its 6 exact page and stanza sections
+      psalmSequence.push("Psalm 119 (p. 159–160: Aleph – Daleth)");
+      psalmSequence.push("Psalm 119 (p. 161–162: He – Heth)");
+      psalmSequence.push("Psalm 119 (p. 163–164: Teth – Lamedh)");
+      psalmSequence.push("Psalm 119 (p. 165–166: Mem – Ayin)");
+      psalmSequence.push("Psalm 119 (p. 167: Pe – Qoph)");
+      psalmSequence.push("Psalm 119 (p. 168: Resh – Taw)");
+      // Note: Because expanding 119 adds 5 extra slots per occurrence, 
+      // we advance our loop index `i` past the extra iterations so we don't duplicate them
+      i += 5; 
+    }
+  }
 
   // 3. Generate rows for each day
   for (let day = 1; day <= totalDays; day++) {
@@ -73,35 +95,8 @@ const generatePlan = () => {
         .join("; ");
     }
 
-    // 4. Assign Psalms sequentially for every single day, expanding Psalm 119 into its 6 page blocks
-    let psalmDisplay = "";
-    
-    if (psalmStep < totalPsalmSlots) {
-      const baseIndex = psalmStep % 150;
-      const basePsalmNum = baseIndex + 1;
-
-      if (basePsalmNum !== 119) {
-        psalmDisplay = `Psalm ${basePsalmNum}`;
-        psalmStep++;
-      } else {
-        const day119Parts = [
-          "Psalm 119 (p. 159–160: Aleph – Daleth)",
-          "Psalm 119 (p. 161–162: He – Heth)",
-          "Psalm 119 (p. 163–164: Teth – Lamedh)",
-          "Psalm 119 (p. 165–166: Mem – Ayin)",
-          "Psalm 119 (p. 167: Pe – Qoph)",
-          "Psalm 119 (p. 168: Resh – Taw)"
-        ];
-
-        psalmDisplay = day119Parts[psalm119Day % 6];
-        psalm119Day++;
-        psalmStep++;
-      }
-    } else {
-      const fallbackPsalmNum = ((psalmStep - totalPsalmSlots) % 150) + 1;
-      psalmDisplay = `Psalm ${fallbackPsalmNum}`;
-      psalmStep++;
-    }
+    // Pull from our pre-built sequence, looping if we ever reach the end
+    let psalmDisplay = psalmSequence[(day - 1) % psalmSequence.length];
 
     planHTML += `
       <div class="row ${isTransition ? "is-transition" : ""}">
