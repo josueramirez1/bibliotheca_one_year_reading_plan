@@ -1,12 +1,11 @@
 const generatePlan = () => {
   const totalDays = 358;
 
-  // 1. Build the master list of main-track pages, excluding Volume III Psalms (15-194) and Volume IV entirely
+  // 1. Build the master list using ONLY Volumes I, II, III, and V (Volume IV is completely removed)
   const rawVolumes = [
     { name: "Volume I", start: 15, end: 751 },
     { name: "Volume II", start: 15, end: 559 },
-    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 },
-    // Volume IV (Apocrypha) removed completely
+    { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 }, // Skips built-in Psalms
     { name: "Volume V", start: 15, end: 566 },
   ];
 
@@ -26,11 +25,9 @@ const generatePlan = () => {
   let planHTML = "";
   let pageIndex = 0;
   
-  // Track our sequential Psalm progression (300 total slots for 2 full cycles)
+  // Track sequential Psalm progression (300 total slots for 2 full cycles)
   let psalmStep = 0; 
   const totalPsalmSlots = 300;
-
-  // Track Psalm 119 sub-steps across its occurrences
   let psalm119Day = 0;
 
   // 3. Generate rows for each day
@@ -101,7 +98,6 @@ const generatePlan = () => {
         psalmStep++;
       }
     } else {
-      // If we exceed 300 active psalm slots before day 358, cycle back cleanly through the psalter
       const fallbackPsalmNum = ((psalmStep - totalPsalmSlots) % 150) + 1;
       psalmDisplay = `Psalm ${fallbackPsalmNum}`;
       psalmStep++;
