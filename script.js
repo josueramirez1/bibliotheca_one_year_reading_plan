@@ -1,6 +1,5 @@
 const generatePlan = () => {
   const totalDays = 365;
-
   // 1. Build the master list of main-track pages, excluding Volume III Psalms (15-194)
   const rawVolumes = [
     { name: "Volume I", start: 15, end: 751 },
