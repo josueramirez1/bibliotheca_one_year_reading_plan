@@ -1,3 +1,57 @@
+const TOTAL_DAYS = 358;
+const RAW_VOLUMES = [
+  { name: "Volume I", start: 15, end: 751 },
+  { name: "Volume II", start: 15, end: 559 },
+  { name: "Volume III", start: 15, end: 607, skipStart: 15, skipEnd: 194 },
+  { name: "Volume V", start: 15, end: 566 }
+];
+
+const PSALM_119_PARTS = [
+  "Psalm 119:1–32 (p. 159–160)",
+  "Psalm 119:33–64 (p. 161–162)",
+  "Psalm 119:65–96 (p. 163–164)",
+  "Psalm 119:97–128 (p. 165–166)",
+  "Psalm 119:129–152 (p. 167)",
+  "Psalm 119:153–176 (p. 168)"
+];
+
+const FINAL_PASS_PSALMS = [
+  "Psalm 1", "Psalm 2", "Psalm 3", "Psalm 4", "Psalm 5", "Psalm 6", "Psalm 7",
+  "Psalm 8", "Psalm 9", "Psalm 10", "Psalm 11", "Psalm 12", "Psalm 13", "Psalm 14",
+  "Psalm 15", "Psalm 16", "Psalm 17", "Psalm 18", "Psalm 19", "Psalm 20", "Psalm 21",
+  "Psalm 22", "Psalm 23", "Psalm 24", "Psalm 25", "Psalm 26", "Psalm 27", "Psalm 28",
+  "Psalm 29", "Psalm 30", "Psalm 31", "Psalm 32", "Psalm 33", "Psalm 34", "Psalm 35",
+  "Psalm 36", "Psalm 37", "Psalm 38", "Psalm 39", "Psalm 40", "Psalm 41", "Psalm 42",
+  "Psalm 43", "Psalm 44", "Psalm 45", "Psalm 46", "Psalm 47", "Psalm 48"
+];
+
+const buildMasterPages = (volumes) => {
+  let pages = [];
+  volumes.forEach((v) => {
+    for (let p = v.start; p <= v.end; p++) {
+      if (v.skipStart && p >= v.skipStart && p <= v.skipEnd) continue;
+      pages.push({ volume: v.name, page: p });
+    }
+  });
+  return pages;
+};
+
+const getPsalmForDay = (day) => {
+  if (day >= 1 && day <= 155) {
+    if (day >= 119 && day <= 124) return PSALM_119_PARTS[day - 119];
+    let baseNum = day < 119 ? day : day - 5;
+    return "Psalm " + baseNum;
+  }
+  if (day >= 156 && day <= 310) {
+    const adjustedDay = day - 155;
+    if (adjustedDay >= 119 && adjustedDay <= 124) return PSALM_119_PARTS[adjustedDay - 119];
+    let baseNum = adjustedDay < 119 ? adjustedDay : adjustedDay - 5;
+    return "Psalm " + Math.min(baseNum, 150);
+  }
+  const index = day - 311;
+  return FINAL_PASS_PSALMS[Math.min(index, FINAL_PASS_PSALMS.length - 1)];
+};
+
 const splitIntoDays = (pages, numDays) => {
   const base = Math.floor(pages.length / numDays);
   const extra = pages.length % numDays;
