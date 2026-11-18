@@ -19,7 +19,7 @@ const PSALM_119_PARTS = [
   "Psalm 119:153–176 (p. 168)"
 ];
 
-// Final stretch psalm sequence for Days 311–358 ending on Psalm 48[cite: 1]
+// Final stretch psalm sequence for Days 311–358 ending on Psalm 48
 const FINAL_PASS_PSALMS = [
   "Psalm 1", "Psalm 2", "Psalm 3", "Psalm 4", "Psalm 5", "Psalm 6", "Psalm 7",
   "Psalm 8", "Psalm 9", "Psalm 10", "Psalm 11", "Psalm 12", "Psalm 13", "Psalm 14",
@@ -27,7 +27,7 @@ const FINAL_PASS_PSALMS = [
   "Psalm 22", "Psalm 23", "Psalm 24", "Psalm 25", "Psalm 26", "Psalm 27", "Psalm 28",
   "Psalm 29", "Psalm 30", "Psalm 31", "Psalm 32", "Psalm 33", "Psalm 34", "Psalm 35",
   "Psalm 36", "Psalm 37", "Psalm 38", "Psalm 39", "Psalm 40", "Psalm 41", "Psalm 42",
-  "Psalm 43", "Psalm 44", "Psalm 45", "Psalm 46", "Psalm 47", "Psalm 48"[cite: 1]
+  "Psalm 43", "Psalm 44", "Psalm 45", "Psalm 46", "Psalm 47", "Psalm 48"
 ];
 
 
@@ -47,7 +47,7 @@ const buildMasterPages = (volumes) => {
 
 // Maps any given day (1 to 358) to its exact BibleProject Psalm assignment
 const getPsalmForDay = (day) => {
-  if (day === 175) return "Psalm 1–2"; //[cite: 1]
+  if (day === 175) return "Psalm 1–2";
 
   // Pass 1: Days 1 to 155
   if (day >= 1 && day <= 155) {
@@ -56,7 +56,7 @@ const getPsalmForDay = (day) => {
     return `Psalm ${baseNum}`;
   } 
   
-  // Pass 2: Days 156 to 310 (Resets at Psalm 1 on Day 156)[cite: 1]
+  // Pass 2: Days 156 to 310 (Resets at Psalm 1 on Day 156)
   if (day >= 156 && day <= 310) {
     const adjustedDay = day < 175 ? day - 155 : day - 156;
     if (adjustedDay >= 119 && adjustedDay <= 124) return PSALM_119_PARTS[adjustedDay - 119];
