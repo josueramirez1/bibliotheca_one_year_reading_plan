@@ -26,15 +26,13 @@ const generatePlan = () => {
   let planHTML = "";
   let pageIndex = 0;
 
-  // 3. Helper for the dual-cycle Psalms track (Vol. III, pages 15–194 read twice)
-  const getPsalmPage = (dayNum) => {
-    const startPage = 15;
-    const endPage = 194;
-    const totalPsalmPages = (endPage - startPage) + 1; // 180 pages
+  // 3. Helper for the dual-cycle Psalms track (Psalms 1–150 read twice across 365 days)
+  const getPsalmNumber = (dayNum) => {
+    const totalPsalms = 150;
     const cycleLength = totalDays / 2; // 182.5 days per cycle
     const adjustedDay = (dayNum - 1) % cycleLength;
-    const pageOffset = Math.floor((adjustedDay * totalPsalmPages) / cycleLength);
-    return startPage + pageOffset;
+    const psalmOffset = Math.floor((adjustedDay * totalPsalms) / cycleLength);
+    return psalmOffset + 1; // Psalms 1 to 150
   };
 
   // 4. Generate rows for each day
@@ -67,14 +65,14 @@ const generatePlan = () => {
       pageDisplay = groups.map(g => `${g.volume}: ${g.startPage === g.endPage ? g.startPage : g.startPage + '–' + g.endPage}`).join("; ");
     }
 
-    const psalmPage = getPsalmPage(day);
+    const psalmNum = getPsalmNumber(day);
 
     planHTML += `
       <div class="row ${isTransition ? "is-transition" : ""}">
           <div class="cell day-cell">Day ${day}</div>
           <div class="cell vol-cell">${volDisplay}</div>
           <div class="cell page-cell">${pageDisplay}</div>
-          <div class="cell psalm-cell">Psalms: p. ${psalmPage}</div>
+          <div class="cell psalm-cell">Psalm ${psalmNum}</div>
       </div>
     `;
   }
