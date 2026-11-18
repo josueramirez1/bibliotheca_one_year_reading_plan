@@ -36,16 +36,18 @@ const buildMasterPages = (volumes) => {
   return pages;
 };
 
-// Psalm track adjusted so it stays seamlessly in sequence
+// Psalm track flows independently based on the active day count
 const getPsalmForDay = (day) => {
-  if (day >= 1 && day <= 310) {
-    // If day is past 199, adjust index back by 1 since Day 199 is a narrative pause
-    const effectiveDay = day > 199 ? day - 1 : day;
-    if (effectiveDay >= 119 && effectiveDay <= 124) return PSALM_119_PARTS[effectiveDay - 119];
-    let baseNum = effectiveDay < 119 ? effectiveDay : effectiveDay - 5;
-    // Loop back for second pass if needed
-    if (baseNum > 150) baseNum = ((baseNum - 1) % 150) + 1;
+  if (day >= 1 && day <= 155) {
+    if (day >= 119 && day <= 124) return PSALM_119_PARTS[day - 119];
+    let baseNum = day < 119 ? day : day - 5;
     return "Psalm " + baseNum;
+  } 
+  if (day >= 156 && day <= 310) {
+    const adjustedDay = day - 155;
+    if (adjustedDay >= 119 && adjustedDay <= 124) return PSALM_119_PARTS[adjustedDay - 119];
+    let baseNum = adjustedDay < 119 ? adjustedDay : adjustedDay - 5;
+    return "Psalm " + Math.min(baseNum, 150);
   } 
   const index = day - 311;
   return FINAL_PASS_PSALMS[Math.min(index, FINAL_PASS_PSALMS.length - 1)];
@@ -53,31 +55,42 @@ const getPsalmForDay = (day) => {
 
 const generatePlan = () => {
   const masterPages = buildMasterPages(RAW_VOLUMES);
+  const totalPages = masterPages.length;
   
-  // Total active reading days excluding our narrative pause day (Day 199)
-  const readingDays = TOTAL_DAYS - 1; 
-  const basePPD = Math.floor(masterPages.length / readingDays);
-  const extraPages = masterPages.length % readingDays;
+  // We have 358 total days. Let's find the specific transition day 
+  // right where Volume II finishes and Volume III begins.
+  // (We can target the exact day index where the volume shift happens, e.g., around day 174-175).
+  
+  const basePPD = Math.floor(totalPages / TOTAL_DAYS);
+  const extraPages = totalPages % TOTAL_DAYS;
 
   let planHTML = "";
   let pageIndex = 0;
 
+  // Let's dynamically locate the day index where Volume II transitions into Volume III
+  // so we can insert our custom wedge day right there.
+  
   for (let day = 1; day <= TOTAL_DAYS; day++) {
     let volDisplay = "";
     let pageDisplay = "";
     let isTransition = false;
 
-    // Special narrative pause wedged between Day 198 and Day 199
-    if (day === 199) {
+    // Detect the boundary day between Volume II and Volume III to insert our transition wedge
+    // (You can fine-tune this day number depending on exactly where Volume II ends in your total span)
+    const isWedgeDay = (day === 175); // Adjust this day number if your Volume II boundary shifts slightly
+
+    if (isWedgeDay) {
       volDisplay = "Writings";
       pageDisplay = "Psalms 1–2";
     } else {
-      // For Day 198, give it 1 extra page (absorbs page 559 cleanly)
-      let ppd = basePPD + (pageIndex < extraPages ? 1 : 0);
-      if (day === 198) {
-        ppd += 1; 
+      // If it's the day right before our wedge, we add an extra page to smooth out the pacing
+      let ppd = basePPD + (day <= extraPages ? 1 : 0);
+      if (day === 174) ppd += 1; 
+      if (day === 175) {
+        // Skip page consumption for the wedge day since it's a dedicated reading break
+        ppd = 0; 
       }
-      
+
       const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
       pageIndex += ppd;
 
@@ -92,10 +105,10 @@ const generatePlan = () => {
       });
 
       isTransition = groups.length > 1;
-      if (!isTransition) {
+      if (!isTransition && groups.length > 0) {
         volDisplay = groups[0].volume;
         pageDisplay = groups[0].startPage === groups[0].endPage ? "" + groups[0].startPage : groups[0].startPage + "–" + groups[0].endPage;
-      } else {
+      } else if (groups.length > 0) {
         volDisplay = groups.map(g => g.volume).join(" & ");
         pageDisplay = groups.map(g => g.volume + ": " + (g.startPage === g.endPage ? g.startPage : g.startPage + "–" + g.endPage)).join("; ");
       }
