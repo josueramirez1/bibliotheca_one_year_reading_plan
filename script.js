@@ -1,5 +1,5 @@
 const generatePlan = () => {
-  const totalDays = 358; // Adjusted to match a 5-day-per-week rhythm (~51-52 weeks)
+  const totalDays = 358;
 
   // 1. Build the master list of main-track pages, excluding Volume III Psalms (15-194)
   const rawVolumes = [
@@ -70,12 +70,14 @@ const generatePlan = () => {
         .join("; ");
     }
 
-    // 4. Assign Psalms sequentially up to the 300 total cap (2 full cycles of 150)
+    // 4. Check if the current day's reading touches Volume IV (Apocrypha)
+    const includesVolumeIV = groups.some(g => g.volume === "Volume IV");
+
+    // 5. Assign Psalms sequentially, but skip Volume IV entirely and respect weekend rest days
     let psalmDisplay = "—";
     const dayOfWeek = day % 7;
     
-    // Skipping two specific days of the week as rest/flex days (e.g., weekends)
-    if (dayOfWeek !== 0 && dayOfWeek !== 6 && psalmCounter < 300) {
+    if (!includesVolumeIV && dayOfWeek !== 0 && dayOfWeek !== 6 && psalmCounter < 300) {
       const psalmNum = (psalmCounter % 150) + 1;
       psalmDisplay = `Psalm ${psalmNum}`;
       psalmCounter++;
