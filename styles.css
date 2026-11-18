@@ -26,7 +26,7 @@ body {
 /* PAPER STYLING */
 .container {
   background-color: var(--paper);
-  max-width: 900px; /* Widened slightly to fit the Psalms track comfortably */
+  max-width: 900px;
   width: 100%;
   padding: 60px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -103,16 +103,14 @@ h2 {
   padding-right: 15px;
 }
 
-/* Psalms Track Column */
+/* Psalms Track Column (Matches standard font size, no italics, no border line) */
 .psalm-cell {
   justify-content: flex-end;
   text-align: right;
-  font-size: 13px;
-  color: #666;
-  font-style: italic;
+  font-size: 15px;
+  font-style: normal;
   font-variant-numeric: tabular-nums;
   padding-left: 15px;
-  border-left: 1px solid var(--line);
 }
 
 /* TRANSITION HIGHLIGHT */
