@@ -97,7 +97,7 @@ const generatePlan = () => {
 
       // Let's implement the explicit 6-day breakdown for Psalm 119 when it comes up:
       // Instead of standard numbering when hitting 119, we expand it:
-      // (We will use a helper check below)
+      // (We will use a helper check below);
     }
 
     // Refined Psalm Assignment Logic with Psalm 119 6-Day Spread:
