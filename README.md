@@ -3,8 +3,8 @@ This plan uses Volumes I, II, III and V to accommodate readers who have not purc
 
 To get a copy for yourself visit their website: https://www.bibliotheca.co/
 
-Website link:
+BibleProject Website links:
 https://d1bsmz3sdihplr.cloudfront.net/media/reading-plans/One-Story-That-Leads-to-Jesus-Annual-Reading-Plan-2026-v2.pdf
 https://bibleproject.com/
 
-Note: This is their 2026 v2 and is it always updating depending on the content their produce so check their website for future updates. 
+Note: This is BibleProject's 2026 v2 reading plan. It is always updating depending on the content they produce so check their website for future updates. 
