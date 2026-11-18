@@ -25,7 +25,10 @@ const generatePlan = () => {
 
   let planHTML = "";
   let pageIndex = 0;
-  let psalmCounter = 0; // Tracks sequential Psalm readings
+  
+  // Track our sequential Psalm progression (We need 300 total slots for 2 full cycles)
+  let psalmStep = 0; 
+  const totalPsalmSlots = 300;
 
   // 3. Generate rows for each day
   for (let day = 1; day <= totalDays; day++) {
@@ -70,17 +73,61 @@ const generatePlan = () => {
         .join("; ");
     }
 
-    // 4. Check if the current day's reading touches Volume IV (Apocrypha)
+    // 4. Check if current day's reading touches Volume IV (Apocrypha)
     const includesVolumeIV = groups.some(g => g.volume === "Volume IV");
 
-    // 5. Assign Psalms sequentially, but skip Volume IV entirely and respect weekend rest days
+    // 5. Assign Psalms for every non-Apocrypha day
     let psalmDisplay = "—";
-    const dayOfWeek = day % 7;
     
-    if (!includesVolumeIV && dayOfWeek !== 0 && dayOfWeek !== 6 && psalmCounter < 300) {
-      const psalmNum = (psalmCounter % 150) + 1;
-      psalmDisplay = `Psalm ${psalmNum}`;
-      psalmCounter++;
+    if (!includesVolumeIV && psalmStep < totalPsalmSlots) {
+      // Check if this slot belongs to Psalm 119 expansion
+      // In a 2-cycle plan of 150, Psalm 119 appears twice. 
+      // We can map specific steps to your 6-day Psalm 119 breakdown:
+      // (Psalm 119 is normally Psalm #119 in sequence)
+      
+      const currentBasePsalm = (psalmStep % 150) + 1;
+
+      if (currentBasePsalm === 119) {
+        // Determine which of the 6 parts of Psalm 119 this occurrence is
+        // (Tracking how many times we've hit Psalm 119 so far)
+        const psalm119Occurrences = Math.floor(psalmStep / 150); 
+        // To keep it simple and sequence it across the 6 days during that block:
+        // We can use a modulo or sub-counter, or handle the 6-day block explicitly.
+      }
+
+      // Let's implement the explicit 6-day breakdown for Psalm 119 when it comes up:
+      // Instead of standard numbering when hitting 119, we expand it:
+      // (We will use a helper check below)
+    }
+
+    // Refined Psalm Assignment Logic with Psalm 119 6-Day Spread:
+    if (!includesVolumeIV && psalmStep < totalPsalmSlots) {
+      // Let's check the exact psalm number in the standard 1-150 rotation
+      const baseIndex = psalmStep % 150;
+      const basePsalmNum = baseIndex + 1;
+
+      if (basePsalmNum !== 119) {
+        psalmDisplay = `Psalm ${basePsalmNum}`;
+        psalmStep++;
+      } else {
+        // We hit Psalm 119! Let's spread it across 6 consecutive days using exact specifications:
+        // Since Psalm 119 occurs twice in 300 slots, this block will run twice (once per cycle).
+        // Let's track 119 sub-steps:
+        if (typeof window.psalm119Day === 'undefined') window.psalm119Day = 0;
+        
+        const day119Parts = [
+          "Psalm 119 (p. 159–160: Aleph – Daleth)",
+          "Psalm 119 (p. 161–162: He – Heth)",
+          "Psalm 119 (p. 163–164: Teth – Lamedh)",
+          "Psalm 119 (p. 165–166: Mem – Ayin)",
+          "Psalm 119 (p. 167: Pe – Qoph)",
+          "Psalm 119 (p. 168: Resh – Taw)"
+        ];
+
+        psalmDisplay = day119Parts[window.psalm119Day % 6];
+        window.psalm119Day++;
+        psalmStep++; // Consume one slot for this day
+      }
     }
 
     planHTML += `
