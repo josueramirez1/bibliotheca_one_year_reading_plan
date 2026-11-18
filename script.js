@@ -36,18 +36,16 @@ const buildMasterPages = (volumes) => {
   return pages;
 };
 
-// Psalm track flows normally without interruption
+// Psalm track adjusted so it stays seamlessly in sequence
 const getPsalmForDay = (day) => {
-  if (day >= 1 && day <= 155) {
-    if (day >= 119 && day <= 124) return PSALM_119_PARTS[day - 119];
-    let baseNum = day < 119 ? day : day - 5;
+  if (day >= 1 && day <= 310) {
+    // If day is past 199, adjust index back by 1 since Day 199 is a narrative pause
+    const effectiveDay = day > 199 ? day - 1 : day;
+    if (effectiveDay >= 119 && effectiveDay <= 124) return PSALM_119_PARTS[effectiveDay - 119];
+    let baseNum = effectiveDay < 119 ? effectiveDay : effectiveDay - 5;
+    // Loop back for second pass if needed
+    if (baseNum > 150) baseNum = ((baseNum - 1) % 150) + 1;
     return "Psalm " + baseNum;
-  } 
-  if (day >= 156 && day <= 310) {
-    const adjustedDay = day - 155;
-    if (adjustedDay >= 119 && adjustedDay <= 124) return PSALM_119_PARTS[adjustedDay - 119];
-    let baseNum = adjustedDay < 119 ? adjustedDay : adjustedDay - 5;
-    return "Psalm " + Math.min(baseNum, 150);
   } 
   const index = day - 311;
   return FINAL_PASS_PSALMS[Math.min(index, FINAL_PASS_PSALMS.length - 1)];
@@ -55,9 +53,11 @@ const getPsalmForDay = (day) => {
 
 const generatePlan = () => {
   const masterPages = buildMasterPages(RAW_VOLUMES);
-  const totalPages = masterPages.length;
-  const basePPD = Math.floor(totalPages / TOTAL_DAYS);
-  const extraPages = totalPages % TOTAL_DAYS;
+  
+  // Total active reading days excluding our narrative pause day (Day 199)
+  const readingDays = TOTAL_DAYS - 1; 
+  const basePPD = Math.floor(masterPages.length / readingDays);
+  const extraPages = masterPages.length % readingDays;
 
   let planHTML = "";
   let pageIndex = 0;
@@ -67,12 +67,17 @@ const generatePlan = () => {
     let pageDisplay = "";
     let isTransition = false;
 
-    // Special override for Day 175: narrative track pauses for Psalms 1–2
-    if (day === 175) {
+    // Special narrative pause wedged between Day 198 and Day 199
+    if (day === 199) {
       volDisplay = "Writings";
       pageDisplay = "Psalms 1–2";
     } else {
-      const ppd = basePPD + (day <= extraPages ? 1 : 0);
+      // For Day 198, give it 1 extra page (absorbs page 559 cleanly)
+      let ppd = basePPD + (pageIndex < extraPages ? 1 : 0);
+      if (day === 198) {
+        ppd += 1; 
+      }
+      
       const dayPages = masterPages.slice(pageIndex, pageIndex + ppd);
       pageIndex += ppd;
 
